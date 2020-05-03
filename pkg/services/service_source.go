@@ -7,6 +7,7 @@ import (
 	"github.com/deps-cloud/api/v1alpha/schema"
 	"github.com/deps-cloud/api/v1alpha/store"
 	"github.com/deps-cloud/api/v1alpha/tracker"
+	"github.com/deps-cloud/tracker/pkg/services/graphstore"
 	"github.com/deps-cloud/tracker/pkg/types"
 
 	"github.com/sirupsen/logrus"
@@ -127,8 +128,13 @@ func (s *sourceService) getCurrent(ctx context.Context, source *schema.Source) (
 		}
 
 		for _, depended := range depends.GetPairs() {
-			idx[readableKey(depended.GetNode())] = depended.GetNode()
-			idx[readableKey(depended.GetEdge())] = depended.GetEdge()
+			// Return only the depends edges that are produced by modules of this source URL
+			dependsEdgeK3 := depended.GetEdge().GetK3()
+			if len(dependsEdgeK3) == 0 ||
+				graphstore.Base64encode(dependsEdgeK3) == graphstore.Base64encode(keyForSource(source)) {
+				idx[readableKey(depended.GetNode())] = depended.GetNode()
+				idx[readableKey(depended.GetEdge())] = depended.GetEdge()
+			}
 		}
 	}
 
@@ -152,6 +158,7 @@ func (s *sourceService) getProposed(ctx context.Context, request *tracker.Source
 			Organization: managementFile.GetOrganization(),
 			Module:       managementFile.GetModule(),
 		})
+
 		if err != nil {
 			logrus.Errorf("[service.source] %s", err.Error())
 			return nil, err
@@ -196,6 +203,7 @@ func (s *sourceService) getProposed(ctx context.Context, request *tracker.Source
 
 			depends.K1 = managedModule.GetK1()
 			depends.K2 = dependedModule.GetK1()
+			depends.K3 = source.GetK1()
 
 			idx[readableKey(dependedModule)] = dependedModule
 			idx[readableKey(depends)] = depends
