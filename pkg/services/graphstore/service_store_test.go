@@ -101,7 +101,11 @@ func TestNewSQLGraphStore_sqlite(t *testing.T) {
 	require.Nil(t, err)
 
 	require.Len(t, upstreamNodeK3.Pairs, 2)
+	require.Equal(t, upstreamNodeK3.Pairs[0].GetEdge().GetK1(), k3)
+	require.Equal(t, upstreamNodeK3.Pairs[0].GetEdge().GetK2(), k5)
 	require.Equal(t, upstreamNodeK3.Pairs[0].GetEdge().GetK3(), k1)
+	require.Equal(t, upstreamNodeK3.Pairs[1].GetEdge().GetK1(), k3)
+	require.Equal(t, upstreamNodeK3.Pairs[1].GetEdge().GetK2(), k5)
 	require.Equal(t, upstreamNodeK3.Pairs[1].GetEdge().GetK3(), k2)
 
 	_, err = graphStore.Delete(nil, &store.DeleteRequest{
