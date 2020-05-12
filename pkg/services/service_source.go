@@ -1,13 +1,13 @@
 package services
 
 import (
+	"bytes"
 	"context"
 
 	"github.com/deps-cloud/api"
 	"github.com/deps-cloud/api/v1alpha/schema"
 	"github.com/deps-cloud/api/v1alpha/store"
 	"github.com/deps-cloud/api/v1alpha/tracker"
-	"github.com/deps-cloud/tracker/pkg/services/graphstore"
 	"github.com/deps-cloud/tracker/pkg/types"
 
 	"github.com/sirupsen/logrus"
@@ -113,6 +113,7 @@ func (s *sourceService) getCurrent(ctx context.Context, source *schema.Source) (
 		return nil, err
 	}
 
+	sourceKey := item.GetK1()
 	for _, managed := range manages.GetPairs() {
 		idx[readableKey(managed.GetNode())] = managed.GetNode()
 		idx[readableKey(managed.GetEdge())] = managed.GetEdge()
@@ -131,7 +132,7 @@ func (s *sourceService) getCurrent(ctx context.Context, source *schema.Source) (
 			// Return only the depends edges that are produced by modules of this source URL
 			dependsEdgeK3 := depended.GetEdge().GetK3()
 			if len(dependsEdgeK3) == 0 ||
-				graphstore.Base64encode(dependsEdgeK3) == graphstore.Base64encode(keyForSource(source)) {
+				bytes.Equal(dependsEdgeK3, sourceKey) {
 				idx[readableKey(depended.GetNode())] = depended.GetNode()
 				idx[readableKey(depended.GetEdge())] = depended.GetEdge()
 			}
