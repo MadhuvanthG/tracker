@@ -26,11 +26,6 @@ func keyForModule(module *schema.Module) []byte {
 }
 
 func readableKey(item *store.GraphItem) string {
-	// TODO: Include K3 here
-	// If K3 is nil - Don't include
-	// If K3 is empty slice - Don't include
-	// If K3 has value - include
-	// Assess backwards compatibility with records in DB
 	keys := []string{
 		item.GetGraphItemType(),
 		graphstore.Base64encode(item.GetK1()),
