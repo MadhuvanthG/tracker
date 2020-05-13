@@ -26,9 +26,20 @@ func keyForModule(module *schema.Module) []byte {
 }
 
 func readableKey(item *store.GraphItem) string {
-	return strings.Join([]string{
+	// TODO: Include K3 here
+	// If K3 is nil - Don't include
+	// If K3 is empty slice - Don't include
+	// If K3 has value - include
+	// Assess backwards compatibility with records in DB
+	keys := []string{
 		item.GetGraphItemType(),
 		graphstore.Base64encode(item.GetK1()),
 		graphstore.Base64encode(item.GetK2()),
-	}, "---")
+	}
+
+	if k3 := item.GetK3(); len(k3) > 0 {
+		keys = append(keys, graphstore.Base64encode(k3))
+	}
+
+	return strings.Join(keys, "---")
 }
