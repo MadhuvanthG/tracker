@@ -26,15 +26,10 @@ func keyForModule(module *schema.Module) []byte {
 }
 
 func readableKey(item *store.GraphItem) string {
-	keys := []string{
+	return strings.Join([]string{
 		item.GetGraphItemType(),
 		graphstore.Base64encode(item.GetK1()),
 		graphstore.Base64encode(item.GetK2()),
-	}
-
-	if k3 := item.GetK3(); len(k3) > 0 {
-		keys = append(keys, graphstore.Base64encode(k3))
-	}
-
-	return strings.Join(keys, "---")
+		graphstore.Base64encode(item.GetK3()),
+	}, "---")
 }

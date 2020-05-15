@@ -131,8 +131,7 @@ func (s *sourceService) getCurrent(ctx context.Context, source *schema.Source) (
 		for _, depended := range depends.GetPairs() {
 			// Return only the depends edges that are produced by modules of this source URL
 			dependsEdgeK3 := depended.GetEdge().GetK3()
-			if len(dependsEdgeK3) == 0 ||
-				bytes.Equal(dependsEdgeK3, sourceKey) {
+			if len(dependsEdgeK3) == 0 || bytes.Equal(dependsEdgeK3, sourceKey) {
 				idx[readableKey(depended.GetNode())] = depended.GetNode()
 				idx[readableKey(depended.GetEdge())] = depended.GetEdge()
 			}
