@@ -195,6 +195,7 @@ func (s *sourceService) getProposed(ctx context.Context, request *tracker.Source
 				Language:          managementFile.GetLanguage(),
 				VersionConstraint: dependency.GetVersionConstraint(),
 				Scopes:            dependency.GetScopes(),
+				SourceUrl:         request.GetSource().Url,
 			})
 			if err != nil {
 				logrus.Errorf("[service.source] %s", err.Error())
