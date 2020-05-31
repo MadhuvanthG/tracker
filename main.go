@@ -13,6 +13,8 @@ import (
 	"github.com/deps-cloud/tracker/pkg/services/graphstore"
 
 	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/jackc/pgx/v4"
+	_ "github.com/jackc/pgx/v4/stdlib"
 
 	"github.com/jmoiron/sqlx"
 
@@ -48,12 +50,30 @@ func registerV1Alpha(rwdb, rodb *sqlx.DB, statements *graphstore.Statements, ser
 	services.RegisterTopologyService(server, graphStoreClient)
 }
 
+// Maps the available drivers to a DBMS name
+func getDBMSName(driverName string) string {
+	switch driverName {
+	case "mysql", "go-mysql", "mymysql":
+		return graphstore.MySQL
+
+	case "pgx", "pq", "gopgsqldriver":
+		return graphstore.Postgres
+
+	case "go-sqlite3", "gosqlite", "go-sqlite", "sqlite":
+		return graphstore.Sqlite
+
+	default:
+		return graphstore.Unknown
+	}
+}
+
 func main() {
 	port := 8090
 	storageDriver := "sqlite3"
 	storageAddress := "file::memory:?cache=shared"
 	storageReadOnlyAddress := ""
 	storageStatementsFile := ""
+	storageManagementSystem := graphstore.Sqlite
 	tlsKey := ""
 	tlsCert := ""
 	tlsCA := ""
@@ -80,7 +100,12 @@ func main() {
 				panicIff(fmt.Errorf("either --storage-address or --storage-readonly-address must be provided"))
 			}
 
-			statements := graphstore.DefaultStatements()
+			storageManagementSystem = getDBMSName(rwdb.DriverName())
+			if storageManagementSystem == graphstore.Unknown {
+				panicIff(fmt.Errorf("This DBMS is not supported yet"))
+			}
+
+			statements := graphstore.ConstructStatements(storageManagementSystem)
 			if len(storageStatementsFile) > 0 {
 				statements, err = graphstore.LoadStatementsFile(storageStatementsFile)
 				panicIff(err)

@@ -182,6 +182,8 @@ func (gs *graphStore) FindUpstream(ctx context.Context, req *store.FindRequest) 
 		return nil, err
 	}
 
+	query = gs.rodb.Rebind(query)
+
 	rows, err := gs.rodb.Queryx(query, args...)
 	if err != nil {
 		return nil, err
@@ -210,6 +212,8 @@ func (gs *graphStore) FindDownstream(ctx context.Context, req *store.FindRequest
 	if err != nil {
 		return nil, err
 	}
+
+	query = gs.rodb.Rebind(query)
 
 	rows, err := gs.rodb.Queryx(query, args...)
 	if err != nil {
