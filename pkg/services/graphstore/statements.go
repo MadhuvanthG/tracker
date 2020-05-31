@@ -163,15 +163,6 @@ func LoadStatements(contents []byte) (*Statements, error) {
 	return statements, nil
 }
 
-// DefaultStatements to use
-func DefaultStatements() *Statements {
-	statements, err := LoadStatements([]byte(sqlStatements))
-	if err != nil {
-		panic(err.Error())
-	}
-	return statements
-}
-
 // ConstructStatements for use based on the dbms
 func ConstructStatements(dbms string) *Statements {
 	rawStatements := sqlStatements
