@@ -17,14 +17,6 @@ type Statements struct {
 	SelectGraphDataDownstreamDependencies string `json:"selectGraphDataDownstreamDependencies"`
 }
 
-// Constants representing the DBMS's supported
-const (
-	MySQL    = "MySQL"
-	Sqlite   = "Sqlite"
-	Postgres = "Postgres"
-	Unknown  = "Unknown"
-)
-
 // sqlStatements compatible to Sqlite and MySQL
 const sqlStatements = `
 createGraphDataTable: |
@@ -163,14 +155,19 @@ func LoadStatements(contents []byte) (*Statements, error) {
 	return statements, nil
 }
 
-// ConstructStatements for use based on the dbms
-func ConstructStatements(dbms string) *Statements {
-	rawStatements := sqlStatements
+// DefaultStatementsFor the given database driver
+func DefaultStatementsFor(driver string) *Statements {
+	dbms, err := GetDBMSName(driver)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	var rawStatements string
 	switch dbms {
-	case Postgres:
+	case postgres:
 		rawStatements = postgresStatements
 
-	case MySQL, Sqlite:
+	case mysql, sqlite:
 		rawStatements = sqlStatements
 	}
 
