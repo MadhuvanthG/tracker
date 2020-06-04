@@ -52,7 +52,7 @@ func registerV1Alpha(rwdb, rodb *sqlx.DB, statements *graphstore.Statements, ser
 
 func main() {
 	port := 8090
-	storageDriver := "sqlite3"
+	storageDriver := "sqlite"
 	storageAddress := "file::memory:?cache=shared"
 	storageReadOnlyAddress := ""
 	storageStatementsFile := ""
@@ -66,6 +66,11 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			var rwdb *sqlx.DB
 			var err error
+
+			storageDriver, err = graphstore.ResolveDriverName(storageDriver)
+			if err != nil {
+				panicIff(err)
+			}
 
 			if len(storageAddress) > 0 {
 				rwdb, err = sqlx.Open(storageDriver, storageAddress)
@@ -82,9 +87,11 @@ func main() {
 				panicIff(fmt.Errorf("either --storage-address or --storage-readonly-address must be provided"))
 			}
 
-			statements := graphstore.DefaultStatementsFor(storageDriver)
+			statements, err := graphstore.DefaultStatementsFor(storageDriver)
 			if len(storageStatementsFile) > 0 {
 				statements, err = graphstore.LoadStatementsFile(storageStatementsFile)
+			}
+			if err != nil {
 				panicIff(err)
 			}
 
@@ -131,7 +138,7 @@ func main() {
 
 	flags := cmd.Flags()
 	flags.IntVar(&port, "port", port, "(optional) the port to run on")
-	flags.StringVar(&storageDriver, "storage-driver", storageDriver, "(optional) the driver used to configure the storage tier")
+	flags.StringVar(&storageDriver, "storage-driver", storageDriver, "(optional) the driver used to configure the storage tier; supported drivers- mysql/postgres/sqlite")
 	flags.StringVar(&storageAddress, "storage-address", storageAddress, "(optional) the address of the storage tier")
 	flags.StringVar(&storageReadOnlyAddress, "storage-readonly-address", storageReadOnlyAddress, "(optional) the readonly address of the storage tier")
 	flags.StringVar(&storageStatementsFile, "storage-statements-file", storageStatementsFile, "(optional) path to a yaml file containing the definition of each SQL statement")

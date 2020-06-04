@@ -156,14 +156,9 @@ func LoadStatements(contents []byte) (*Statements, error) {
 }
 
 // DefaultStatementsFor the given database driver
-func DefaultStatementsFor(driver string) *Statements {
-	dbms, err := GetDBMSName(driver)
-	if err != nil {
-		panic(err.Error())
-	}
-
+func DefaultStatementsFor(driver string) (*Statements, error) {
 	var rawStatements string
-	switch dbms {
+	switch driver {
 	case postgres:
 		rawStatements = postgresStatements
 
@@ -171,9 +166,5 @@ func DefaultStatementsFor(driver string) *Statements {
 		rawStatements = sqlStatements
 	}
 
-	statements, err := LoadStatements([]byte(rawStatements))
-	if err != nil {
-		panic(err.Error())
-	}
-	return statements
+	return LoadStatements([]byte(rawStatements))
 }

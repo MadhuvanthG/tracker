@@ -2,7 +2,7 @@ package graphstore
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"time"
 
 	"github.com/deps-cloud/api"
@@ -13,28 +13,27 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Constants representing the DBMS's supported
+// Constants representing the DBMS's supported with a mapping to the underlying driver names used
 const (
 	mysql    = "mysql"
-	sqlite   = "sqlite"
-	postgres = "postgres"
+	sqlite   = "sqlite3"
+	postgres = "pgx"
 )
 
-// GetDBMSName identifies the dbms based on the driver
-func GetDBMSName(driverName string) (string, error) {
-	switch driverName {
-	case "mysql", "go-mysql", "mymysql":
+// ResolveDriverName resolves the sql driver to use for the given dbms system
+func ResolveDriverName(dbmsName string) (string, error) {
+	switch dbmsName {
+	case "mysql":
 		return mysql, nil
 
-	case "pgx", "pq", "gopgsqldriver":
-		return postgres, nil
-
-	case "sqlite3":
+	case "sqlite":
 		return sqlite, nil
 
-	default:
-		return "", errors.New("Unrecognized driver name")
+	case "postgres":
+		return postgres, nil
 	}
+
+	return "", fmt.Errorf("%s not supported, specify one of the supported systems; mysql/postgres/sqlite", dbmsName)
 }
 
 // NewSQLGraphStore constructs a new GraphStore with a sql driven backend. Current
