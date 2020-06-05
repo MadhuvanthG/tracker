@@ -68,9 +68,7 @@ func main() {
 			var err error
 
 			storageDriver, err = graphstore.ResolveDriverName(storageDriver)
-			if err != nil {
-				panicIff(err)
-			}
+			panicIff(err)
 
 			if len(storageAddress) > 0 {
 				rwdb, err = sqlx.Open(storageDriver, storageAddress)
@@ -91,9 +89,7 @@ func main() {
 			if len(storageStatementsFile) > 0 {
 				statements, err = graphstore.LoadStatementsFile(storageStatementsFile)
 			}
-			if err != nil {
-				panicIff(err)
-			}
+			panicIff(err)
 
 			options := make([]grpc.ServerOption, 0)
 			if len(tlsCert) > 0 && len(tlsKey) > 0 && len(tlsCA) > 0 {
