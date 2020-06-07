@@ -2,31 +2,100 @@ package graphstore_test
 
 import (
 	"bytes"
+	"net"
+	"net/url"
+	"os"
+	"runtime"
 	"testing"
+	"time"
 
-	"github.com/deps-cloud/api"
 	"github.com/deps-cloud/api/v1alpha/store"
 	"github.com/deps-cloud/tracker/pkg/services/graphstore"
-
-	_ "github.com/mattn/go-sqlite3"
-
+	_ "github.com/jackc/pgx/v4"
+	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/jmoiron/sqlx"
+	"github.com/ory/dockertest"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
 
 var (
-	k1 = []byte("1001")
-	k2 = []byte("2002")
-	k3 = []byte("3003")
-	k4 = []byte("4004")
-	k5 = []byte("5005")
-	k6 = []byte("6006")
+	pgURL        *url.URL
+	rwPostgresDb *sqlx.DB
+	roPostgresDb *sqlx.DB
 )
 
-func generateData() []byte {
-	return make([]byte, 0)
+func TestMain(m *testing.M) {
+	code := 0
+	defer func() {
+		os.Exit(code)
+	}()
+
+	pgURL = &url.URL{
+		Scheme: "postgres",
+		User:   url.UserPassword("user", "password"),
+		Path:   "depscloustest",
+	}
+	q := pgURL.Query()
+	q.Add("sslmode", "disable")
+	pgURL.RawQuery = q.Encode()
+
+	pool, err := dockertest.NewPool("")
+	if err != nil {
+		logrus.Error("Could not connect to docker")
+	}
+
+	pw, _ := pgURL.User.Password()
+	runOpts := dockertest.RunOptions{
+		Repository:   "postgres",
+		Tag:          "12.3",
+		ExposedPorts: []string{"5432"},
+		Env: []string{
+			"POSTGRES_USER=" + pgURL.User.Username(),
+			"POSTGRES_PASSWORD=" + pw,
+			"POSTGRES_DB=" + pgURL.Path,
+		},
+	}
+
+	resource, err := pool.RunWithOptions(&runOpts)
+	if err != nil {
+		logrus.Errorf("Could not start postgres container with %s", err.Error())
+	}
+	defer func() {
+		err = pool.Purge(resource)
+		rwPostgresDb = nil
+		roPostgresDb = nil
+		if err != nil {
+			logrus.Error("Could not purge resource")
+		}
+	}()
+
+	// TODO: Need to verify that this works if we run this on a different OS (ex. in our CI pipeline)
+	pgURL.Host = resource.Container.NetworkSettings.IPAddress
+
+	// Docker layer network is different on Mac
+	if runtime.GOOS == "darwin" {
+		pgURL.Host = net.JoinHostPort(resource.GetBoundIP("5432/tcp"), resource.GetPort("5432/tcp"))
+	}
+
+	pool.MaxWait = 10 * time.Second
+	err = pool.Retry(func() error {
+		db, err := sqlx.Open("pgx", pgURL.String())
+		if err != nil {
+			return err
+		}
+		rwPostgresDb = db
+		roPostgresDb = db
+		return db.Ping()
+	})
+	if err != nil {
+		logrus.Error("Could not connect to postgres server")
+	}
+
+	code = m.Run()
 }
 
-func TestNewSQLGraphStore_sqlite(t *testing.T) {
+func TestNewSQLGraphStore_postgres(t *testing.T) {
 	data := []*store.GraphItem{
 		{GraphItemType: "node", K1: k1, K2: k1, Encoding: 0, GraphItemData: generateData()},
 		{GraphItemType: "node", K1: k2, K2: k2, Encoding: 0, GraphItemData: generateData()},
@@ -43,21 +112,21 @@ func TestNewSQLGraphStore_sqlite(t *testing.T) {
 		{GraphItemType: "edge", K1: k3, K2: k5, K3: k2, Encoding: 0, GraphItemData: generateData()},
 	}
 
-	rwdb, rodb, err := graphstore.NewDatabaseConnection("sqlite", "file::memory:?cache=shared", "file::memory:?cache=shared&mode=ro")
+	require.NotNil(t, rwPostgresDb)
+	require.NotNil(t, roPostgresDb)
+
+	statements, err := graphstore.DefaultStatementsFor("postgres")
 	require.Nil(t, err)
 
-	statements, err := graphstore.DefaultStatementsFor("sqlite")
+	graphStoreServer, err := graphstore.NewSQLGraphStore(rwPostgresDb, roPostgresDb, statements)
 	require.Nil(t, err)
 
-	graphStore, err := graphstore.NewSQLGraphStore(rwdb, rodb, statements)
-	require.Nil(t, err)
-
-	_, err = graphStore.Put(nil, &store.PutRequest{
+	_, err = graphStoreServer.Put(nil, &store.PutRequest{
 		Items: data,
 	})
 	require.Nil(t, err)
 
-	response, err := graphStore.List(nil, &store.ListRequest{
+	response, err := graphStoreServer.List(nil, &store.ListRequest{
 		Page:  1,
 		Count: 10,
 		Type:  "edge",
@@ -65,13 +134,13 @@ func TestNewSQLGraphStore_sqlite(t *testing.T) {
 	require.Nil(t, err)
 	require.Len(t, response.Items, 6)
 
-	downstream, err := graphStore.FindDownstream(nil, &store.FindRequest{
+	downstream, err := graphStoreServer.FindDownstream(nil, &store.FindRequest{
 		Key:       k2,
 		EdgeTypes: []string{"edge"},
 	})
 	require.Nil(t, err)
 
-	upstream, err := graphStore.FindUpstream(nil, &store.FindRequest{
+	upstream, err := graphStoreServer.FindUpstream(nil, &store.FindRequest{
 		Key:       k2,
 		EdgeTypes: []string{"edge"},
 	})
@@ -93,7 +162,7 @@ func TestNewSQLGraphStore_sqlite(t *testing.T) {
 	require.Equal(t, upstream.Pairs[1].Edge.K2, k4)
 
 	// Tests for multiple edges between nodes
-	upstreamNodeK3, err := graphStore.FindUpstream(nil, &store.FindRequest{
+	upstreamNodeK3, err := graphStoreServer.FindUpstream(nil, &store.FindRequest{
 		Key:       k3,
 		EdgeTypes: []string{"edge"},
 	})
@@ -121,45 +190,8 @@ func TestNewSQLGraphStore_sqlite(t *testing.T) {
 		require.Equal(t, edge2k3, k1)
 	}
 
-	_, err = graphStore.Delete(nil, &store.DeleteRequest{
+	_, err = graphStoreServer.Delete(nil, &store.DeleteRequest{
 		Items: data,
 	})
 	require.Nil(t, err)
-}
-
-func TestReadOnly_sqlite(t *testing.T) {
-	_, rodb, err := graphstore.NewDatabaseConnection("sqlite", "", "file::memory:?cache=shared&mode=ro")
-	require.Nil(t, err)
-
-	statements, err := graphstore.DefaultStatementsFor("sqlite")
-	require.Nil(t, err)
-
-	graphStore, err := graphstore.NewSQLGraphStore(nil, rodb, statements)
-	require.Nil(t, err)
-
-	{
-		resp, err := graphStore.Put(nil, &store.PutRequest{})
-		require.Nil(t, resp)
-		require.Equal(t, api.ErrUnsupported, err)
-	}
-
-	{
-		resp, err := graphStore.Delete(nil, &store.DeleteRequest{})
-		require.Nil(t, resp)
-		require.Equal(t, api.ErrUnsupported, err)
-	}
-}
-
-func TestResolveDriverName(t *testing.T) {
-	_, err := graphstore.ResolveDriverName("sqlite")
-	require.Nil(t, err)
-
-	_, err = graphstore.ResolveDriverName("mysql")
-	require.Nil(t, err)
-
-	_, err = graphstore.ResolveDriverName("postgres")
-	require.Nil(t, err)
-
-	_, err = graphstore.ResolveDriverName("noDB")
-	require.NotNil(t, err)
 }

@@ -3,6 +3,9 @@ module github.com/deps-cloud/tracker
 go 1.12
 
 require (
+	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
+	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
+	github.com/containerd/continuity v0.0.0-20200413184840-d3ef23f19fbb // indirect
 	github.com/deps-cloud/api v0.1.3
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-sql-driver/mysql v1.4.1
@@ -11,15 +14,18 @@ require (
 	github.com/jackc/pgx/v4 v4.6.0
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/mattn/go-sqlite3 v1.11.0
-	github.com/sirupsen/logrus v1.4.2
+	github.com/opencontainers/go-digest v1.0.0 // indirect
+	github.com/ory/dockertest v3.3.5+incompatible
+	github.com/ory/dockertest/v3 v3.6.0 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
+	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.5.1
-	golang.org/x/net v0.0.0-20191119073136-fc4aabc6c914 // indirect
-	golang.org/x/sys v0.0.0-20191120155948-bd437916bb0e // indirect
+	golang.org/x/net v0.0.0-20200602114024-627f9648deb9 // indirect
+	golang.org/x/sys v0.0.0-20200602225109-6fdc65e7d980 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/genproto v0.0.0-20191115221424-83cc0476cb11 // indirect
 	google.golang.org/grpc v1.25.1
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
-	gopkg.in/yaml.v2 v2.2.7 // indirect
 )

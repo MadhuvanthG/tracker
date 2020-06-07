@@ -2,7 +2,6 @@ package graphstore
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/deps-cloud/api"
@@ -13,31 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Constants representing the DBMS's supported with a mapping to the underlying driver names used
-const (
-	mysql    = "mysql"
-	sqlite   = "sqlite3"
-	postgres = "pgx"
-)
-
-// ResolveDriverName resolves the sql driver to use for the given dbms system
-func ResolveDriverName(dbmsName string) (string, error) {
-	switch dbmsName {
-	case "mysql":
-		return mysql, nil
-
-	case "sqlite":
-		return sqlite, nil
-
-	case "postgres":
-		return postgres, nil
-	}
-
-	return "", fmt.Errorf("%s not supported, specify one of the supported systems; mysql/postgres/sqlite", dbmsName)
-}
-
-// NewSQLGraphStore constructs a new GraphStore with a sql driven backend. Current
-// queries support sqlite3 but should be able to work on mysql as well.
+// NewSQLGraphStore constructs a new GraphStore with a sql driven backend
 func NewSQLGraphStore(rwdb, rodb *sqlx.DB, statements *Statements) (store.GraphStoreServer, error) {
 	if rwdb != nil {
 		if _, err := rwdb.Exec(statements.CreateGraphDataTable); err != nil {

@@ -78,9 +78,9 @@ const postgresStatements = `
 createGraphDataTable: |
   CREATE TABLE IF NOT EXISTS dts_graphdata(
       graph_item_type varchar(55),
-      k1 char(64),
-      k2 char(64),
-      k3 char(64),
+      k1 varchar(64),
+      k2 varchar(64),
+      k3 varchar(64),
       encoding smallint,
       graph_item_data text,
       last_modified timestamp,
@@ -156,13 +156,13 @@ func LoadStatements(contents []byte) (*Statements, error) {
 }
 
 // DefaultStatementsFor the given database driver
-func DefaultStatementsFor(driver string) (*Statements, error) {
+func DefaultStatementsFor(dbms string) (*Statements, error) {
 	var rawStatements string
-	switch driver {
-	case postgres:
+	switch dbms {
+	case "postgres":
 		rawStatements = postgresStatements
 
-	case mysql, sqlite:
+	case "mysql", "sqlite":
 		rawStatements = sqlStatements
 	}
 

@@ -67,20 +67,8 @@ func main() {
 			var rwdb *sqlx.DB
 			var err error
 
-			storageDriver, err = graphstore.ResolveDriverName(storageDriver)
+			rwdb, rodb, err := graphstore.NewDatabaseConnection(storageDriver, storageAddress, storageReadOnlyAddress)
 			panicIff(err)
-
-			if len(storageAddress) > 0 {
-				rwdb, err = sqlx.Open(storageDriver, storageAddress)
-				panicIff(err)
-			}
-
-			rodb := rwdb
-			if len(storageReadOnlyAddress) > 0 {
-				rodb, err = sqlx.Open(storageDriver, storageReadOnlyAddress)
-				panicIff(err)
-			}
-
 			if rodb == nil && rwdb == nil {
 				panicIff(fmt.Errorf("either --storage-address or --storage-readonly-address must be provided"))
 			}
