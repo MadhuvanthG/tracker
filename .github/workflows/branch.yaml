@@ -39,8 +39,8 @@ jobs:
         with:
           repository: ${{ github.repository }}/testimage
           registry: docker.pkg.github.com
-          username: $REGISTRY_USERNAME
-          password: $GITHUB_TOKEN
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
           tag_with_ref: true
           dockerfile: Dockerfile.dev
           push: true
