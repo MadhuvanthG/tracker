@@ -10,7 +10,6 @@ on:
 
 jobs:
   build:
-    if: ${{ false }}
     runs-on: ubuntu-latest
     container:
       image: golang:1.14-alpine3.11
@@ -27,8 +26,8 @@ jobs:
   e2e:
     if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
-    # needs:
-    #   - build
+    needs:
+      - build
     continue-on-error: true
     steps:
       - name: Checkout
@@ -37,13 +36,10 @@ jobs:
       - name: Build and push ephemeral Docker image
         uses: docker/build-push-action@v1
         with:
-          repository: depscloud/tracker/testimage
+          repository: ${{ github.repository }}/tracker
           registry: docker.pkg.github.com
           username: ${{ github.actor }}
           password: ${{ github.token }}
           tag_with_ref: true
           dockerfile: Dockerfile.dev
           push: true
-        env:
-          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
