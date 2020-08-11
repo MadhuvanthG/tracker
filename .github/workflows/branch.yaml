@@ -10,6 +10,7 @@ on:
 
 jobs:
   build:
+    if: ${{ false }}
     runs-on: ubuntu-latest
     container:
       image: golang:1.14-alpine3.11
@@ -36,10 +37,13 @@ jobs:
       - name: Build and push ephemeral Docker image
         uses: docker/build-push-action@v1
         with:
-          repository: ${{ github.repository }}/tracker
+          repository: ${{ github.repository }}\tracker
           registry: https://docker.pkg.github.com
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: $REGISTRY_USERNAME
+          password: $GITHUB_TOKEN
           tag_with_ref: true
           dockerfile: Dockerfile.dev
           push: true
+        env:
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
