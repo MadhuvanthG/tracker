@@ -36,7 +36,7 @@ jobs:
       - name: Build and push ephemeral Docker image
         uses: docker/build-push-action@v1
         with:
-          repository: "${REPOSITORY}"
+          repository: ${{ github.repository }}
           registry: https://docker.pkg.github.com
           username: $REGISTRY_USERNAME
           password: $GITHUB_TOKEN
